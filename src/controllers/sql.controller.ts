@@ -3,14 +3,14 @@ import mysql from 'mysql2'
 import * as dotenv from 'dotenv'
 dotenv.config()
 import {
+  sqlSelectAll,
+  sqlSelectOne,
   sqlInsert,
-  sqlSelectOneRow,
   sqlUpdate,
   sqlDelete,
-  sqlSelectLeftJoin,
-  sqlSelectFromSubPartial,
-  sqlSelectFromSubOneRow,
-  sqlSelectFromSubAll,
+  sqlSelectAllSub,
+  sqlSelectSubByCate,
+  sqlSelectOneSub,
 } from '../models/mall.model'
 
 export const mysqlTester = async (
@@ -26,7 +26,7 @@ export const mysqlTester = async (
     })
     connection.connect((err) => {
       if (err) {
-        return next(new Error(err.code + ' ' + err.toString()))
+        return next(err.code + ' ' + err.toString())
       }
       console.log('>>> Connected as id ' + connection.threadId)
       res.status(200).json({ threadId: connection.threadId })
@@ -34,7 +34,7 @@ export const mysqlTester = async (
 
     connection.end()
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }
 
@@ -45,18 +45,11 @@ export const listCategories = async (
   next: NextFunction
 ) => {
   try {
-    await sqlSelectLeftJoin()
-      .then((response) => {
-        if (!response.length) {
-          return res.status(404).end()
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    const data = await sqlSelectAll()
+    if (!data.length) return res.status(404).end()
+    return res.status(200).json(data)
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }
 
@@ -65,20 +58,18 @@ export const getCategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  const id = req.params.id
   try {
-    await sqlSelectOneRow('category', id)
-      .then((response) => {
-        if (!response.length) {
-          return res.status(404).end()
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    const { id } = req.params
+    if (id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    const data = await sqlSelectOne(id)
+    if (!data.length) return res.status(404).end()
+
+    return res.status(200).json(data)
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }
 
@@ -87,20 +78,19 @@ export const createCategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.body) {
-    return next(new Error(`>>> New category info not provided.`))
-  }
-
   try {
-    await sqlInsert('category', req.body)
-      .then((response) => {
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    if (!req.body.name) {
+      throw new Error('New category info not provided.')
+    }
+
+    const status = await sqlInsert('category', req.body)
+    if (!status || !status.affectedRows || status.affectedRows <= 0) {
+      return res.status(500).json(status)
+    }
+
+    return res.status(200).json(status)
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }
 
@@ -109,24 +99,24 @@ export const updateCategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { id } = req.params
-  if (!id || !req.body.name) {
-    return next(new Error('>>> Id and/or new value not provided.'))
-  }
-
   try {
-    await sqlUpdate('category', req.body, id)
-      .then((response) => {
-        if (response.affectedRows <= 0) {
-          res.status(404).json(response)
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    if (!req.params.id || !req.body.name) {
+      throw new Error('Id and/or new value not provided.')
+    }
+    const { id } = req.params
+
+    if (id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    const status = await sqlUpdate('category', req.body, id)
+    if (!status || !status.affectedRows || status.affectedRows <= 0) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }
 
@@ -135,21 +125,21 @@ export const deleteCategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { id } = req.params
-
   try {
-    await sqlDelete('category', id)
-      .then((response) => {
-        if (response.affectedRows && response.affectedRows <= 0) {
-          res.status(404).json(response)
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    const { id } = req.params
+
+    if (id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    const status = await sqlDelete('category', id)
+    if (!status || !status.affectedRows || status.affectedRows <= 0) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }
 // end of category routes controllers
@@ -161,18 +151,14 @@ export const listAllSubcategories = async (
   next: NextFunction
 ) => {
   try {
-    await sqlSelectFromSubAll()
-      .then((response) => {
-        if (!response.length) {
-          return res.status(404).end()
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    const status = await sqlSelectAllSub()
+    if (!status || !status.length) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
   } catch (err) {
-    return next(new Error(err))
+    return next(err)
   }
 }
 
@@ -181,21 +167,20 @@ export const listSubcategories = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { id } = req.params
-
   try {
-    await sqlSelectFromSubPartial(id)
-      .then((response) => {
-        if (!response.length) {
-          return res.status(404).end()
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    const { id } = req.params
+    if (id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    const status = await sqlSelectSubByCate(id)
+    if (!status || !status.length) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
   } catch (err) {
-    return next(new Error(err))
+    return next(err)
   }
 }
 
@@ -204,21 +189,20 @@ export const getSubcategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { sub_id } = req.params
-
   try {
-    await sqlSelectFromSubOneRow(sub_id)
-      .then((response) => {
-        if (!response.length) {
-          return res.status(404).end()
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    const { sub_id } = req.params
+    if (sub_id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    const status = await sqlSelectOneSub(sub_id)
+    if (!status || !status.length) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }
 
@@ -227,22 +211,26 @@ export const createSubcategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.body || !req.params.id) {
-    return next(new Error(`>>> New subcategory info not provided.`))
-  }
-
-  // Add category id as foreign key to the new entry
-  req.body.category_id = req.params.id
-
   try {
-    await sqlInsert('sub_category', req.body)
-      .then((response) => {
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
-  } catch (error) {}
+    if (!req.body.name || !req.body.description || !req.params.id) {
+      throw new Error('New subcategory info not provided')
+    }
+    if (req.params.id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    // Add category id as foreign key to the new entry
+    req.body.category_id = req.params.id
+
+    const status = await sqlInsert('sub_category', req.body)
+    if (!status || !status.affectedRows || status.affectedRows <= 0) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
+  } catch (error) {
+    return next(error)
+  }
 }
 
 export const updateSubcategory = async (
@@ -250,24 +238,26 @@ export const updateSubcategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { sub_id } = req.params
-
-  if (!sub_id || !req.body) {
-    return next(new Error('>>> Id and/or new value not provided.'))
-  }
-
   try {
-    await sqlUpdate('sub_category', req.body, sub_id)
-      .then((response) => {
-        if (response.affectedRows <= 0) {
-          return res.status(404).json(response)
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
-  } catch (error) {}
+    if (!req.params.sub_id || !req.body) {
+      throw new Error('Id and/or new value not provided.')
+    }
+
+    const { sub_id } = req.params
+
+    if (sub_id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    const status = await sqlUpdate('sub_category', req.body, sub_id)
+    if (!status || !status.affectedRows || status.affectedRows <= 0) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
+  } catch (error) {
+    return next(error)
+  }
 }
 
 export const deleteSubcategory = async (
@@ -275,20 +265,20 @@ export const deleteSubcategory = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { sub_id } = req.params
-
   try {
-    await sqlDelete('sub_category', sub_id)
-      .then((response) => {
-        if (response.affectedRows <= 0) {
-          return res.status(404).json(response)
-        }
-        return res.status(200).json(response)
-      })
-      .catch((err) => {
-        return next(new Error(err))
-      })
+    const { sub_id } = req.params
+
+    if (sub_id.match(/^\d+$/) == null) {
+      throw new Error('Id not found')
+    }
+
+    const status = await sqlDelete('sub_category', sub_id)
+    if (!status || !status.affectedRows || status.affectedRows <= 0) {
+      return res.status(404).json(status)
+    }
+
+    return res.status(200).json(status)
   } catch (error) {
-    return next(new Error(error))
+    return next(error)
   }
 }

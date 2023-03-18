@@ -34,6 +34,8 @@ export const sqlPoolExecute = async (
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE,
+    connectionLimit: 10,
+    maxIdle: 5,
   })
 
   const promisePool = pool.promise()

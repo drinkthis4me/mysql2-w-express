@@ -3,36 +3,57 @@ dotenv.config()
 import mysql from 'mysql2/promise'
 import { sqlPoolExecute } from '../service/mysql'
 
-/**
- * Select * FROM ?? WHERE id = ?
- * @param table string of table's name
- * @param id string (Optional)
- * @returns results
- */
-export const sqlSelectOneRow = async (table: string, id?: string) => {
-  let sql = ''
-  let insert: string[]
-  if (id) {
-    // get one subcategory
-    sql = `SELECT * FROM ?? WHERE id = ?`
-    insert = [table, id]
-  } else {
-    // list all
-    sql = `SELECT * FROM ??`
-    insert = [table]
-  }
-  sql = mysql.format(sql, insert)
+export const sqlSelectAll = async () => {
+  let sql = `SELECT * FROM category`
 
   const results = await sqlPoolExecute(sql)
 
   if (!results) {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 
   return results
 }
 
-export const sqlSelectFromSubPartial = async (id: string) => {
+/**
+ * `SELECT * FROM category WHERE id = ?`
+ * @param id string of category id
+ * @returns results
+ */
+export const sqlSelectOne = async ( id: string) => {
+  let sql = `SELECT * FROM category WHERE id = ?`
+  let insert = [id]
+  sql = mysql.format(sql, insert)
+
+  const results = await sqlPoolExecute(sql)
+
+  if (!results) {
+    throw new Error(`Mysql error`)
+  }
+
+  return results
+}
+/**
+ * `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s`
+ * @returns 
+ */
+export const sqlSelectAllSub = async () => {
+  let sql = `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s`
+
+  const results = await sqlPoolExecute(sql)
+
+  if (!results) {
+    throw new Error(`Mysql error`)
+  }
+
+  return results
+}
+/**
+ * `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE category_id = ?`
+ * @param id 
+ * @returns 
+ */
+export const sqlSelectSubByCate = async (id: string) => {
   let sql = `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE category_id = ?`
   let insert = [id]
   sql = mysql.format(sql, insert)
@@ -40,38 +61,34 @@ export const sqlSelectFromSubPartial = async (id: string) => {
   const results = await sqlPoolExecute(sql)
 
   if (!results) {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 
   return results
 }
-export const sqlSelectFromSubOneRow = async (id: string) => {
+/**
+ * `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE s.id = ?`
+ * @param sub_id 
+ * @returns 
+ */
+export const sqlSelectOneSub = async (sub_id: string) => {
   let sql = `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE s.id = ?`
-  let insert = [id]
+  let insert = [sub_id]
   sql = mysql.format(sql, insert)
 
   const results = await sqlPoolExecute(sql)
 
   if (!results) {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 
   return results
 }
-export const sqlSelectFromSubAll = async () => {
-  let sql = `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s`
 
-  const results = await sqlPoolExecute(sql)
-
-  if (!results) {
-    throw new Error(`Mysql error.`)
-  }
-
-  return results
-}
 
 /**
- * Joins with overlapping column names
+ * not in use
+ * Left Joins category & sub_category
  * https://github.com/mysqljs/mysql#joins-with-overlapping-column-names
  *
  * @param categoryID string (Optional. If not provided, return all categories)
@@ -107,10 +124,9 @@ export const sqlSelectLeftJoin = async (categoryID?: string) => {
       subcategories: Subcategory[]
     }
 
-    interface Subcategory {
-      id: number
-      name: string
+    interface Subcategory extends Omit<Category, 'subcategories'> {
       description: string
+      category_id: number
     }
 
     let currentID = 0
@@ -123,6 +139,7 @@ export const sqlSelectLeftJoin = async (categoryID?: string) => {
         id: results[i]['subcategory_id'],
         name: results[i]['subcategory_name'],
         description: results[i]['description'],
+        category_id: results[i]['id'],
       }
 
       if (results[i]['id'] !== currentID) {
@@ -150,12 +167,12 @@ export const sqlSelectLeftJoin = async (categoryID?: string) => {
 
     return modifiedResults
   } else {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 }
 
 /**
- * INSERT INTO ?? SET ?
+ * `INSERT INTO ?? SET ?`
  * @param table string of table's name
  * @param param object of the new entry
  * @returns results
@@ -167,13 +184,14 @@ export const sqlInsert = async (table: string, param: any) => {
 
   const results = await sqlPoolExecute(sql)
   if (!results) {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 
   return results
 }
 
 /**
+ * not in use
  * INSERT INTO ?? SET ?
  * @param table string of table's name
  * @param param object of the new entry
@@ -189,18 +207,17 @@ export const sqlInsertMultiple = async (category_id: string, items: any[]) => {
   const results = await sqlPoolExecute(sql)
 
   if (!results) {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 
   return results
 }
 
 /**
- * UPDATE ?? SET ? WHERE id = ?
+ * `UPDATE ?? SET ? WHERE id = ?`
  * @param table string of table's name
- * @param content object of new data, [key]: (value) == [field] : (value)
+ * @param content object of new data, `[key]: (value) == [field] : (value)`
  * @param id string
- * @param subId string (Optional)
  * @returns
  */
 export const sqlUpdate = async (
@@ -217,7 +234,7 @@ export const sqlUpdate = async (
   const results = await sqlPoolExecute(sql)
 
   if (!results) {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 
   return results
@@ -227,8 +244,7 @@ export const sqlUpdate = async (
  * DELETE FROM ?? WHERE id = ?
  * @param table string
  * @param id string
- * @param subId string (Optional)
- * @returns void if success, else throw error.
+ * @returns
  */
 export const sqlDelete = async (table: string, id: string) => {
   let sql = ''
@@ -241,7 +257,7 @@ export const sqlDelete = async (table: string, id: string) => {
   const results = await sqlPoolExecute(sql)
 
   if (!results) {
-    throw new Error(`Mysql error.`)
+    throw new Error(`Mysql error`)
   }
 
   return results
