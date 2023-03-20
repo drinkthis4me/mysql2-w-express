@@ -191,29 +191,6 @@ export const sqlInsert = async (table: string, param: any) => {
 }
 
 /**
- * not in use
- * INSERT INTO ?? SET ?
- * @param table string of table's name
- * @param param object of the new entry
- * @returns results
- */
-export const sqlInsertMultiple = async (category_id: string, items: any[]) => {
-  let sql = `INSERT INTO subcategory(category_id, name, description) VALUES ?`
-  const inserts = [
-    items.map((item) => [category_id, item.name, item.description]),
-  ]
-  sql = mysql.format(sql, inserts)
-
-  const results = await sqlPoolExecute(sql)
-
-  if (!results) {
-    throw new Error(`Mysql error`)
-  }
-
-  return results
-}
-
-/**
  * `UPDATE ?? SET ? WHERE id = ?`
  * @param table string of table's name
  * @param content object of new data, `[key]: (value) == [field] : (value)`
