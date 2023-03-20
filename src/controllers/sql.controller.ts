@@ -3,7 +3,7 @@ import mysql from 'mysql2'
 import * as dotenv from 'dotenv'
 dotenv.config()
 import {
-  sqlSelectAll,
+  sqlSelectLeftJoin,
   sqlSelectOne,
   sqlInsert,
   sqlUpdate,
@@ -45,7 +45,7 @@ export const listCategories = async (
   next: NextFunction
 ) => {
   try {
-    const data = await sqlSelectAll()
+    const data = await sqlSelectLeftJoin()
     if (!data.length) return res.status(404).end()
     return res.status(200).json(data)
   } catch (error) {

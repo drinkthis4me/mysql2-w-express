@@ -3,6 +3,10 @@ dotenv.config()
 import mysql from 'mysql2/promise'
 import { sqlPoolExecute } from '../service/mysql'
 
+/**
+ * `SELECT * FROM category`
+ * @returns 
+ */
 export const sqlSelectAll = async () => {
   let sql = `SELECT * FROM category`
 
@@ -20,7 +24,7 @@ export const sqlSelectAll = async () => {
  * @param id string of category id
  * @returns results
  */
-export const sqlSelectOne = async ( id: string) => {
+export const sqlSelectOne = async (id: string) => {
   let sql = `SELECT * FROM category WHERE id = ?`
   let insert = [id]
   sql = mysql.format(sql, insert)
@@ -35,7 +39,7 @@ export const sqlSelectOne = async ( id: string) => {
 }
 /**
  * `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s`
- * @returns 
+ * @returns
  */
 export const sqlSelectAllSub = async () => {
   let sql = `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s`
@@ -50,8 +54,8 @@ export const sqlSelectAllSub = async () => {
 }
 /**
  * `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE category_id = ?`
- * @param id 
- * @returns 
+ * @param id
+ * @returns
  */
 export const sqlSelectSubByCate = async (id: string) => {
   let sql = `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE category_id = ?`
@@ -68,8 +72,8 @@ export const sqlSelectSubByCate = async (id: string) => {
 }
 /**
  * `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE s.id = ?`
- * @param sub_id 
- * @returns 
+ * @param sub_id
+ * @returns
  */
 export const sqlSelectOneSub = async (sub_id: string) => {
   let sql = `SELECT s.id, s.category_id, s.name, s.description FROM sub_category s WHERE s.id = ?`
@@ -85,36 +89,19 @@ export const sqlSelectOneSub = async (sub_id: string) => {
   return results
 }
 
-
 /**
- * not in use
  * Left Joins category & sub_category
  * https://github.com/mysqljs/mysql#joins-with-overlapping-column-names
  *
  * @param categoryID string (Optional. If not provided, return all categories)
  * @returns array of categories with their subcategories
  */
-export const sqlSelectLeftJoin = async (categoryID?: string) => {
-  let sql: string, inserts: string[]
-
-  if (categoryID) {
-    // Inner join one category with all sub_category
-    // Alias: c = category; s = subcategory
-    sql = `SELECT c.id, c.name, s.id AS subcategory_id, s.name AS subcategory_name, s.description
-    FROM ?? c, ?? s 
-    WHERE c.id = s.category_id AND c.id = ?
-    ORDER BY s.id`
-    inserts = ['category', 'sub_category', categoryID]
-  } else {
-    // left join all category and sub_category
-    sql = `SELECT c.id, c.name, s.id AS subcategory_id, s.name AS subcategory_name, s.description 
-    FROM ?? c LEFT OUTER JOIN ?? s 
+export const sqlSelectLeftJoin = async () => {
+  const sql = `SELECT c.id, c.name, s.id AS subcategory_id, s.name AS subcategory_name, s.description 
+    FROM category c LEFT OUTER JOIN sub_category s 
     ON c.id = s.category_id 
     ORDER BY c.id`
-    inserts = ['category', 'sub_category']
-  }
 
-  sql = mysql.format(sql, inserts)
   const results = await sqlPoolExecute(sql)
 
   if (results instanceof Array && results) {
