@@ -5,7 +5,7 @@ import { sqlPoolExecute } from '../service/mysql'
 
 /**
  * `SELECT * FROM category`
- * @returns 
+ * @returns
  */
 export const sqlSelectAll = async () => {
   let sql = `SELECT * FROM category`
@@ -188,7 +188,6 @@ export const sqlUpdate = async (
   table: string,
   content: Object,
   id: string,
-  subId?: string
 ) => {
   let sql: string, inserts: any[]
   sql = `UPDATE ?? SET ? WHERE id = ?`
@@ -218,6 +217,54 @@ export const sqlDelete = async (table: string, id: string) => {
   inserts = [table, id]
 
   sql = mysql.format(sql, inserts)
+  const results = await sqlPoolExecute(sql)
+
+  if (!results) {
+    throw new Error(`Mysql error`)
+  }
+
+  return results
+}
+
+/**
+ * `SELECT * FROM product`
+ * @returns
+ */
+export const sqlSelectAllP = async () => {
+  const sql = `SELECT * FROM product`
+  const results = await sqlPoolExecute(sql)
+
+  if (!results) {
+    throw new Error(`Mysql error`)
+  }
+
+  return results
+}
+
+/**
+ * `SELECT p.id, p.name, p.description, p.image_path, p.sub_category_id FROM product p WHERE sub_category_id = ?`
+ * @param sub_id
+ * @returns
+ */
+export const sqlSelectPBySub = async (sub_id) => {
+  let sql = `SELECT p.id, p.name, p.description, p.image_path, p.sub_category_id FROM product p WHERE sub_category_id = ?`
+  const insert = [sub_id]
+  sql = mysql.format(sql, insert)
+
+  const results = await sqlPoolExecute(sql)
+
+  if (!results) {
+    throw new Error(`Mysql error`)
+  }
+
+  return results
+}
+
+export const sqlSelectOneP = async (p_id: string) => {
+  let sql = `SELECT p.id, p.name, p.description, p.image_path, p.sub_category_id FROM product p WHERE p.id = ?`
+  const insert = [p_id]
+  sql = mysql.format(sql, insert)
+
   const results = await sqlPoolExecute(sql)
 
   if (!results) {

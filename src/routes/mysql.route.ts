@@ -12,6 +12,12 @@ import {
   createSubcategory,
   updateSubcategory,
   deleteSubcategory,
+  listAllProducts,
+  listProducts,
+  getProduct,
+  createProduct,
+  updateProduct,
+  deleteProduct,
 } from '../controllers/sql.controller'
 
 const router = express.Router()
@@ -32,5 +38,13 @@ router.get('/subcategories/:sub_id', getSubcategory) // get one
 router.post('/categories/:id/subcategories', createSubcategory)
 router.put('/subcategories/:sub_id', updateSubcategory)
 router.delete('/subcategories/:sub_id', deleteSubcategory)
+
+// product route
+router.get('/products', listAllProducts) // get all
+router.get('subcategories/:sub_id/products', listProducts) // get all under one subcategory
+router.get('/products/:p_id', getProduct) // get one
+router.post('/subcategories/:sub_id/products', createProduct)
+router.put('/products/:p_id', updateProduct)
+router.delete('/products/:p_id', deleteProduct)
 
 export default router
